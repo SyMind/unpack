@@ -1,5 +1,6 @@
 use crate::js_plugin::JsPluginAdapter;
 use camino::Utf8PathBuf;
+use napi::threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFunctionCallMode};
 use napi::Env;
 use napi_derive::napi;
 use std::sync::Arc;
@@ -61,7 +62,7 @@ impl JsCompiler {
         }
     }
     #[napi]
-    pub async unsafe fn build(&mut self) -> napi::Result<()> {
+    pub async unsafe fn build(&mut self, callback: ThreadsafeFunction<(), ErrorStrategy::CalleeHandled>) -> napi::Result<()> {
         let mut compiler = self.inner.take().unwrap();
         let compiler = napi::tokio::spawn(async {
             compiler.build().await;
@@ -71,6 +72,7 @@ impl JsCompiler {
         .unwrap();
         self.inner = Some(compiler);
 
+        callback.call(Ok(()), ThreadsafeFunctionCallMode::NonBlocking);
         Ok(())
     }
 }

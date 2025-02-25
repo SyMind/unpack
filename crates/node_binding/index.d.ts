@@ -11,5 +11,5 @@ export interface JsPluginAdapter {
 export declare class JsCompilation { }
 export declare class JsCompiler {
   constructor(context: string, entry: string, plugins: Array<JsPluginAdapter>)
-  build(): Promise<void>
+  build(callback: (err: Error | null, ) => any): Promise<void>
 }

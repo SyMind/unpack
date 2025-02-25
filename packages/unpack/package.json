@@ -4,15 +4,18 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "build": "node --expose-gc tests/build.ts"
+    "dev": "tsx --expose-gc src/index.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/node": "22.13.4",
     "@unpack-js/binding": "workspace:*",
-    "typescript": "5.7.3",
-    "@types/node": "22.13.4"
+    "typescript": "5.7.3"
+  },
+  "dependencies": {
+    "tsx": "^4.19.3"
   }
 }
