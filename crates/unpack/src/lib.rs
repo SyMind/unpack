@@ -12,3 +12,4 @@ pub mod resolver;
 pub mod resolver_factory;
 pub mod task;
 pub mod utils;
+pub mod binding_allocator;

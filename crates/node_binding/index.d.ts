@@ -6,10 +6,10 @@
 export interface JsPluginAdapter {
   onResolve?: (arg: string) => any
   onLoad?: (arg: string) => any
-  thisCompilation?: (arg: JsCompilation) => any
+  thisCompilation?: (arg: Compilation) => any
 }
 export declare class JsCompilation { }
 export declare class JsCompiler {
   constructor(context: string, entry: string, plugins: Array<JsPluginAdapter>)
-  build(): Promise<void>
+  build(callback: (err: Error | null, ) => any): void
 }

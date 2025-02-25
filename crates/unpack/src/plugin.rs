@@ -1,6 +1,7 @@
 use crate::{compilation::Compilation, compiler::CompilerOptions};
 use camino::Utf8PathBuf;
 use miette::Result;
+use napi::bindgen_prelude::{Reference, SharedReference};
 use std::{cell::UnsafeCell, fmt::Debug, sync::Arc};
 use async_trait::async_trait;
 #[derive(Clone,Debug)]
@@ -44,9 +45,8 @@ unsafe impl  Sync for CompilationCell {
 #[async_trait]
 pub trait Plugin: Send + Sync +  Debug {
     fn name(&self) -> &'static str;
-    async fn this_compilation(&self, _ctx: Arc<PluginContext>, _compilation: Arc<CompilationCell>) {
-        
-    }
+    async fn this_compilation(&self, _ctx: Arc<PluginContext>, _compilation: &mut Reference<Compilation>);
+
     async fn resolve(&self, _ctx: Arc<PluginContext>, _args: ResolveArgs) -> Result<Option<String>> {
         Ok(None)
     }
@@ -85,10 +85,9 @@ impl PluginDriver {
         }
         Ok(None)
     }
-    pub async fn run_compilation_hook(&self, compilation: Arc<CompilationCell>) {
+    pub async fn run_compilation_hook(&self, compilation: &mut Reference<Compilation>) {
         for plugin in &self.plugins {
-            plugin.this_compilation(self.plugin_context.clone(), compilation.clone()).await;
-            
+            plugin.this_compilation(self.plugin_context.clone(), compilation).await;
         }
     }
 }

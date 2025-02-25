@@ -2,3 +2,4 @@
 mod js_compilation;
 mod js_compiler;
 mod js_plugin;
+mod napi_allocator;

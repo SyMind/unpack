@@ -27,6 +27,8 @@ rayon = { version = "1.10.0"}
 mimalloc = { version = "0.1.43"}
 crossbeam-channel = { version = "*"}
 async-std = { version = "1.13.0"}
+napi_ext = "0.4.0"
+
 [profile.release]
 codegen-units = 1
 debug         = false

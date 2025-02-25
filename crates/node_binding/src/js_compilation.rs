@@ -1,18 +1,8 @@
 use std::{cell::UnsafeCell, ptr::NonNull, sync::Arc};
 
-use napi::bindgen_prelude::External;
+use napi::bindgen_prelude::{External, Reference};
 use napi_derive::napi;
-use unpack::{compilation::Compilation, plugin::CompilationCell};
+use unpack::{compilation::{self, Compilation}, plugin::CompilationCell};
 
 #[napi]
-pub struct JsCompilation {
-    compilation: External<Arc<CompilationCell>>
-}
-
-impl JsCompilation {
-    pub fn from_compilation(compilation: External<Arc<CompilationCell>>) -> Self{
-        Self {
-            compilation: compilation
-        }
-    }
-}
+pub struct JsCompilation(pub(crate) Compilation);

@@ -11,7 +11,8 @@ use crate::{
         ScannerState,
     }, plugin::PluginDriver, task::Task
 };
-use std::sync::Arc;
+use std::{future::IntoFuture, sync::Arc};
+
 #[derive(Debug, Default)]
 struct CodeGenerationResults {
     module_id_to_generation_result: FxHashMap<ModuleId, CodeGenerationResult>,
@@ -25,6 +26,7 @@ pub struct CodeGenerationState {
 pub struct ChunkAssetState {
     pub assets: FxHashMap<String, BoxSource>,
 }
+
 #[derive(Debug)]
 pub struct Compilation {
     #[allow(dead_code)]
@@ -43,16 +45,32 @@ impl Compilation {
             plugin_driver,
         }
     }
+
     /// similar with webpack's make phase, which will make module graph
     pub async fn scan(&mut self) -> ScannerState {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+
+        let options = self.options.clone();
+        let context = self.options.context.clone();
+        let plugin_driver = self.plugin_driver.clone();
         
-        let (send, mut recv) = unbounded_channel::<Result<Task>>();
-        let module_scanner =
-            ModuleScanner::new(self.options.clone(), self.options.context.clone(), self.plugin_driver.clone());
-        let mut scanner_state = ScannerState::new(send);
-        module_scanner.add_entries(&mut scanner_state,&mut recv).await;
-        scanner_state
+        std::thread::spawn(move || {
+            tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(async {
+                    let (send, mut recv) = unbounded_channel::<Result<Task>>();
+                    let module_scanner =
+                        ModuleScanner::new(options, context, plugin_driver);
+                    let mut scanner_state = ScannerState::new(send);
+                    module_scanner.add_entries(&mut scanner_state,&mut recv).await;
+                    sender.send(scanner_state).unwrap();
+                })
+        });
+        receiver.into_future().await.unwrap()
     }
+
     /// similar with webpack's seal phase
     /// this will make chunk(consists of connected modules)
     pub fn link(&mut self, scanner_state: ScannerState) -> LinkerState {
@@ -61,6 +79,7 @@ impl Compilation {
         linker.build_chunk_graph(&mut linker_state);
         linker_state
     }
+
     /// code generation
     pub fn code_generation(&self, linker_state: LinkerState) -> CodeGenerationState {
         let mut code_generation_results = CodeGenerationResults::default();
@@ -90,6 +109,7 @@ impl Compilation {
             diagnostics: linker_state.diagnostics
         }
     }
+
     // chunk asset
     pub fn create_chunk_asset(
         &self,
@@ -113,6 +133,7 @@ impl Compilation {
         }
         ChunkAssetState { assets }
     }
+
     pub fn render_chunk_modules(
         &self,
         state: &mut CodeGenerationState,
@@ -125,6 +146,7 @@ impl Compilation {
         let concat_source = ConcatSource::new(module_sources);
         concat_source.boxed()
     }
+
     pub fn render_module(
         &self,
         state: &mut CodeGenerationState,
